@@ -55,7 +55,7 @@ def ttk_resim_arsivi(query: str, max_results: int = 3):
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     response = requests.get(search_url, headers=headers)
     if response.status_code != 200:
-        print(f"⚠️ Arama sayfası hatası: {response.status_code}")
+        print(f"Arama sayfası hatası: {response.status_code}")
         return None
 
     soup = BeautifulSoup(response.text, "html.parser")
