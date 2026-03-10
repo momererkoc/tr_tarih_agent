@@ -1,9 +1,40 @@
 import requests
 from bs4 import BeautifulSoup
+from server.config import Config
 
 
-def fix_relative_url(base_url: str, href: str) -> str:
-    """Relative URL'leri absolute URL'ye dönüştürür."""
+class HttpClient:
+    """Merkezi HTTP istek yöneticisi (Session destekli)"""
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update(Config.DEFAULT_HEADERS)
+
+    def fetch(self, url, method="GET", params=None, json_body=None, data=None, headers=None, timeout=15):
+        try:
+            if method == "POST":
+                return self.session.post(url, json=json_body, data=data, params=params, headers=headers, timeout=timeout)
+            return self.session.get(url, params=params, headers=headers, timeout=timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"HTTP İsteği Başarısız: {e}")
+
+
+def parse_html(text):
+    return BeautifulSoup(text, "html.parser")
+
+
+def clean_html(text):
+    if not text:
+        return ""
+    if "<" in text:
+        return BeautifulSoup(text, "html.parser").get_text(strip=True)
+    return text.strip()
+
+
+def fix_relative_url(base_url, href):
+    if not href:
+        return ""
+    if href.startswith("http"):
+        return href
     if href.startswith("./"):
         href = href[1:]
     elif href.startswith("."):
@@ -11,26 +42,3 @@ def fix_relative_url(base_url: str, href: str) -> str:
     if not href.startswith("/"):
         href = "/" + href
     return f"{base_url}{href}"
-
-
-def fetch(url: str, method: str = "GET", headers: dict = None, params: dict = None, json_body: dict = None) -> requests.Response:
-    """HTTP isteği yapar, timeout ve hata yönetimi dahil."""
-    default_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-    if headers:
-        default_headers.update(headers)
-
-    if method == "POST":
-        return requests.post(url, json=json_body, headers=default_headers, timeout=15)
-    return requests.get(url, params=params, headers=default_headers, timeout=15)
-
-
-def parse_html(text: str) -> BeautifulSoup:
-    """HTML metnini BeautifulSoup nesnesine dönüştürür."""
-    return BeautifulSoup(text, "html.parser")
-
-
-def clean_html(text: str) -> str:
-    """HTML tag'lerini temizler, düz metin döner."""
-    if "<" in text:
-        return BeautifulSoup(text, "html.parser").get_text(strip=True)
-    return text
