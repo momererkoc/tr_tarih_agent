@@ -9,7 +9,6 @@ An MCP (Model Context Protocol) server that provides AI agents with structured a
 ### 1. Official Gazette of the Republic of Turkey (Resmi Gazete)
 
 The official publication organ of the Turkish state, continuously archiving legislative and regulatory documents since 1921. The archive contains:
-
 - Laws, decree-laws, and presidential decrees
 - Regulations, communiques, and circulars
 - Appointment decisions and public procurement notices
