@@ -5,6 +5,9 @@ import time
 from collections import defaultdict
 from typing import AsyncGenerator
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import anthropic
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
@@ -31,7 +34,7 @@ os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 client = anthropic.Anthropic(
-    api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+    api_key=os.environ.get("ANTHROPIC_API_KEY", "sk-placeholder"),  # .env'den yüklenir
     base_url="https://token-plan-sgp.xiaomimimo.com/anthropic",
 )
 
