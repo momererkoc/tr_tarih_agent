@@ -97,11 +97,11 @@ TOOLS = [
 ]
 
 TOOL_META = {
-    "resmiGazeteAra":  {"icon": "📜", "label": "Resmi Gazete",  "color": "#3b82f6"},
-    "belletenAra":     {"icon": "📚", "label": "Belleten",       "color": "#8b5cf6"},
-    "belletenOku":     {"icon": "📖", "label": "Makale Oku",     "color": "#6d28d9"},
-    "tarihiGorselAra": {"icon": "🖼️", "label": "Görsel Arşiv",  "color": "#10b981"},
-    "mazbataAra":      {"icon": "🏛️", "label": "TBMM Arşivi",   "color": "#f59e0b"},
+    "resmiGazeteAra":  {"label": "Resmi Gazete",  "abbr": "RG", "color": "#3b82f6"},
+    "belletenAra":     {"label": "Belleten",       "abbr": "BL", "color": "#8b5cf6"},
+    "belletenOku":     {"label": "Makale Oku",     "abbr": "MO", "color": "#6d28d9"},
+    "tarihiGorselAra": {"label": "Görsel Arşiv",   "abbr": "GA", "color": "#10b981"},
+    "mazbataAra":      {"label": "TBMM Arşivi",    "abbr": "TB", "color": "#f59e0b"},
 }
 
 
