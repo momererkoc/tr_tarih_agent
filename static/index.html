@@ -576,12 +576,181 @@ body {
   animation: fadein .3s ease;
 }
 .rl-bar.show { display: flex; }
+
+/* ── Media: thumbnail grid ───────── */
+.src-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.src-thumb {
+  aspect-ratio: 4/3;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  cursor: zoom-in;
+  background: var(--bg);
+  transition: box-shadow .15s, transform .15s;
+}
+.src-thumb:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  transform: scale(1.02);
+}
+.src-thumb img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.src-thumb.err { display: none; }
+
+/* ── Media: PDF buttons ──────────── */
+.src-pdfs { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+.src-pdf-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border2);
+  background: var(--white);
+  font-size: 12px; font-weight: 500;
+  color: var(--accent);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color .15s, background .15s;
+}
+.src-pdf-btn:hover { border-color: var(--accent); background: rgba(37,99,235,.04); }
+.src-pdf-btn .pdf-icon {
+  width: 16px; height: 16px; flex-shrink: 0;
+}
+
+/* ── Viewer modal ────────────────── */
+#viewer {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: vfadein .2s ease;
+}
+@keyframes vfadein { from { opacity:0 } to { opacity:1 } }
+#viewer.open { display: flex; flex-direction: column; }
+
+#viewer-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(0,0,0,.6);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  flex-shrink: 0;
+  z-index: 2;
+}
+#viewer-title {
+  flex: 1;
+  font-size: 12px;
+  color: rgba(255,255,255,.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vbtn {
+  width: 32px; height: 32px;
+  border-radius: 7px;
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.8);
+  font-size: 16px; line-height: 1;
+  cursor: pointer;
+  display: grid; place-items: center;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.vbtn:hover { background: rgba(255,255,255,.18); color: #fff; }
+.vbtn.close-btn { font-size: 18px; }
+#vzoom-label {
+  font-size: 11px; font-family: 'Inter', monospace;
+  color: rgba(255,255,255,.5); min-width: 38px; text-align: center;
+}
+
+#viewer-stage {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+/* image mode */
+#viewer-img-wrap {
+  width: 100%; height: 100%;
+  display: grid; place-items: center;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#viewer-img-wrap.dragging { cursor: grabbing; }
+#viewer-img {
+  max-width: 92vw;
+  max-height: 84vh;
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.5);
+  transform-origin: center center;
+  pointer-events: none;
+  will-change: transform;
+  transition: transform .08s ease;
+}
+
+/* pdf mode */
+#viewer-pdf-wrap {
+  width: 90vw;
+  height: calc(100vh - 120px);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,.5);
+}
+#viewer-frame {
+  width: 100%; height: 100%;
+  border: none;
+  border-radius: 8px;
+  background: #fff;
+}
 </style>
 </head>
 <body>
 
 <!-- Progress bar -->
 <div id="pbar"></div>
+
+<!-- ── VIEWER MODAL ───────────────────── -->
+<div id="viewer">
+  <div id="viewer-bar">
+    <span id="viewer-title"></span>
+    <button class="vbtn" onclick="vzoom(1.25)" title="Büyüt">+</button>
+    <span id="vzoom-label">100%</span>
+    <button class="vbtn" onclick="vzoom(0.8)" title="Küçült">−</button>
+    <button class="vbtn" onclick="vreset()" title="Sıfırla">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg>
+    </button>
+    <a id="viewer-dl" href="#" target="_blank" title="Yeni sekmede aç" class="vbtn">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+    </a>
+    <button class="vbtn close-btn" onclick="closeViewer()" title="Kapat (ESC)">×</button>
+  </div>
+  <div id="viewer-stage">
+    <!-- image mode -->
+    <div id="viewer-img-wrap" style="display:none">
+      <img id="viewer-img" draggable="false">
+    </div>
+    <!-- pdf mode -->
+    <div id="viewer-pdf-wrap" style="display:none">
+      <iframe id="viewer-frame" allowfullscreen></iframe>
+    </div>
+  </div>
+</div>
 
 <!-- ── SCREEN: HOME ──────────────────── -->
 <div id="home">
@@ -840,14 +1009,83 @@ function doneStep(id, result) {
   addSourceCard(abbr, label, color, result);
 }
 
+// ── URL extraction ────────────────────────────
+function extractImageUrls(text) {
+  const urls = [];
+  // "Görsel URL: https://..." pattern
+  const pat1 = /Görsel URL:\s*(https?:\/\/\S+)/g;
+  let m;
+  while ((m = pat1.exec(text)) !== null) urls.push(m[1].replace(/[.,;)]+$/, ''));
+  // Generic image extensions
+  const pat2 = /https?:\/\/\S+\.(?:jpg|jpeg|png|gif|webp|JPG|JPEG|PNG)(?:\?\S*)?/g;
+  while ((m = pat2.exec(text)) !== null) {
+    const u = m[0].replace(/[.,;)]+$/, '');
+    if (!urls.includes(u)) urls.push(u);
+  }
+  return [...new Set(urls)];
+}
+
+function extractPdfUrls(text) {
+  const urls = [];
+  // "BELGE URL: https://..." pattern
+  const pat1 = /BELGE URL:\s*(https?:\/\/\S+)/g;
+  let m;
+  while ((m = pat1.exec(text)) !== null) urls.push(m[1].replace(/[.,;)]+$/, ''));
+  // Generic PDF links
+  const pat2 = /https?:\/\/\S+\.pdf(?:\?\S*)?/gi;
+  while ((m = pat2.exec(text)) !== null) {
+    const u = m[0].replace(/[.,;)]+$/, '');
+    if (!urls.includes(u)) urls.push(u);
+  }
+  // resmigazete.gov.tr fihrist URLs (HTML pages with embedded PDF)
+  const pat3 = /https?:\/\/www\.resmigazete\.gov\.tr\/eskiler\/\S+/g;
+  while ((m = pat3.exec(text)) !== null) {
+    const u = m[0].replace(/[.,;)]+$/, '');
+    if (!urls.includes(u)) urls.push(u);
+  }
+  return [...new Set(urls)];
+}
+
 // ── Source cards ──────────────────────────────
 function addSourceCard(abbr, label, color, result) {
   const ss = document.getElementById('sourcesSection');
   ss.style.display = 'block';
   const cards = document.getElementById('sourceCards');
   const id = `sc-${Date.now()}`;
+
+  const imgUrls = extractImageUrls(result);
+  const pdfUrls = extractPdfUrls(result);
+
+  // Thumbnail HTML
+  let thumbsHtml = '';
+  if (imgUrls.length > 0) {
+    const items = imgUrls.map((u, i) =>
+      `<div class="src-thumb" id="${id}-th-${i}" onclick="openImgViewer('${escAttr(u)}','${escAttr(label)}')">
+        <img src="${escAttr(u)}" loading="lazy"
+          onerror="document.getElementById('${id}-th-${i}').classList.add('err')">
+      </div>`
+    ).join('');
+    thumbsHtml = `<div class="src-thumbs">${items}</div>`;
+  }
+
+  // PDF buttons HTML
+  let pdfsHtml = '';
+  if (pdfUrls.length > 0) {
+    const items = pdfUrls.map(u => {
+      const name = decodeURIComponent(u.split('/').pop().split('?')[0]) || 'Belgeyi Görüntüle';
+      return `<button class="src-pdf-btn" onclick="openPdfViewer('${escAttr(u)}','${escAttr(label)}')">
+        <svg class="pdf-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20 2H8a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14a2 2 0 002 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
+        </svg>
+        ${esc(name.length > 50 ? name.slice(0,47)+'…' : name)}
+      </button>`;
+    }).join('');
+    pdfsHtml = `<div class="src-pdfs">${items}</div>`;
+  }
+
   const el = document.createElement('div');
-  el.className = 'src-card';
+  el.className = 'src-card' + (imgUrls.length > 0 || pdfUrls.length > 0 ? ' open' : '');
+  el.id = id;
   el.style.setProperty('--tc',        color);
   el.style.setProperty('--tc-bg',     hexRgba(color, .08));
   el.style.setProperty('--tc-border', hexRgba(color, .18));
@@ -858,9 +1096,10 @@ function addSourceCard(abbr, label, color, result) {
       <div class="src-toggle">▾</div>
     </div>
     <div class="src-body">
-      <pre class="src-pre">${esc(result)}</pre>
+      ${thumbsHtml}
+      ${pdfsHtml}
+      <pre class="src-pre" style="margin-top:${thumbsHtml||pdfsHtml ? '10px' : '0'}">${esc(result)}</pre>
     </div>`;
-  el.id = id;
   cards.appendChild(el);
 }
 
@@ -868,6 +1107,108 @@ function toggleSrc(id) {
   document.getElementById(id)?.classList.toggle('open');
   scrollAns();
 }
+
+// ── Viewer ────────────────────────────────────
+let vScale = 1, vX = 0, vY = 0;
+let vDragging = false, vStartX = 0, vStartY = 0, vOriginX = 0, vOriginY = 0;
+
+function openImgViewer(url, title) {
+  const v = document.getElementById('viewer');
+  document.getElementById('viewer-title').textContent = title || url;
+  document.getElementById('viewer-dl').href = url;
+
+  document.getElementById('viewer-pdf-wrap').style.display = 'none';
+  const wrap = document.getElementById('viewer-img-wrap');
+  const img  = document.getElementById('viewer-img');
+  wrap.style.display = 'grid';
+  img.src = url;
+
+  vScale = 1; vX = 0; vY = 0;
+  applyTransform();
+  updateZoomLabel();
+  v.classList.add('open');
+
+  // Mouse wheel zoom
+  wrap.onwheel = (e) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.12 : 0.89;
+    vScale = Math.min(Math.max(vScale * factor, 0.2), 8);
+    applyTransform();
+    updateZoomLabel();
+  };
+
+  // Drag to pan
+  wrap.onmousedown = (e) => {
+    if (e.button !== 0) return;
+    vDragging = true;
+    vStartX = e.clientX; vStartY = e.clientY;
+    vOriginX = vX; vOriginY = vY;
+    wrap.classList.add('dragging');
+  };
+  window.onmousemove = (e) => {
+    if (!vDragging) return;
+    vX = vOriginX + (e.clientX - vStartX);
+    vY = vOriginY + (e.clientY - vStartY);
+    applyTransform(false); // no transition while dragging
+  };
+  window.onmouseup = () => {
+    vDragging = false;
+    document.getElementById('viewer-img-wrap').classList.remove('dragging');
+  };
+
+  // Double-click reset
+  wrap.ondblclick = vreset;
+}
+
+function openPdfViewer(url, title) {
+  const v = document.getElementById('viewer');
+  document.getElementById('viewer-title').textContent = title || url;
+  document.getElementById('viewer-dl').href = url;
+
+  document.getElementById('viewer-img-wrap').style.display = 'none';
+  document.getElementById('viewer-pdf-wrap').style.display = 'block';
+  document.getElementById('viewer-frame').src = url;
+
+  // hide zoom controls for PDF (browser handles it)
+  v.classList.add('open');
+}
+
+function closeViewer() {
+  document.getElementById('viewer').classList.remove('open');
+  document.getElementById('viewer-frame').src = '';
+  document.getElementById('viewer-img').src = '';
+  window.onmousemove = null;
+  window.onmouseup  = null;
+}
+
+function vzoom(factor) {
+  vScale = Math.min(Math.max(vScale * factor, 0.2), 8);
+  applyTransform();
+  updateZoomLabel();
+}
+
+function vreset() {
+  vScale = 1; vX = 0; vY = 0;
+  applyTransform();
+  updateZoomLabel();
+}
+
+function applyTransform(transition = true) {
+  const img = document.getElementById('viewer-img');
+  img.style.transition = transition ? 'transform .12s ease' : 'none';
+  img.style.transform = `translate(${vX}px,${vY}px) scale(${vScale})`;
+}
+
+function updateZoomLabel() {
+  document.getElementById('vzoom-label').textContent = Math.round(vScale * 100) + '%';
+}
+
+// Close on backdrop click or ESC
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeViewer(); });
+document.getElementById('viewer').addEventListener('click', e => {
+  if (e.target === document.getElementById('viewer') ||
+      e.target === document.getElementById('viewer-stage')) closeViewer();
+});
 
 // ── Answer text ───────────────────────────────
 let _ansText = '';
@@ -1061,6 +1402,12 @@ function esc(s) {
   return String(s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ── Init ──────────────────────────────────────
