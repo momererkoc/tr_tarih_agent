@@ -1,16 +1,17 @@
 import os
 import json
 import asyncio
+import time
+from collections import defaultdict
 from typing import AsyncGenerator
 
 import anthropic
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Tool implementasyonları
 from server.tools.resmi_gazete import resmi_gazete_tool
 from server.tools.belleten import belleten_tool
 from server.tools.ttk_arsiv import ttk_arsiv_tool
@@ -29,12 +30,29 @@ app.add_middleware(
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Anthropic client - custom endpoint
 client = anthropic.Anthropic(
     api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
     base_url="https://token-plan-sgp.xiaomimimo.com/anthropic",
 )
 
+# ── Rate limiting ─────────────────────────────
+RATE_LIMIT  = 10     # max requests
+RATE_WINDOW = 3600   # per hour (seconds)
+_rate_store: dict[str, list[float]] = defaultdict(list)
+
+def check_rate_limit(ip: str) -> tuple[bool, int, int]:
+    """Returns (allowed, used, remaining_seconds)."""
+    now = time.time()
+    window_start = now - RATE_WINDOW
+    timestamps = [t for t in _rate_store[ip] if t > window_start]
+    _rate_store[ip] = timestamps
+    if len(timestamps) >= RATE_LIMIT:
+        reset_in = int(RATE_WINDOW - (now - timestamps[0]))
+        return False, len(timestamps), reset_in
+    _rate_store[ip].append(now)
+    return True, len(_rate_store[ip]), 0
+
+# ── Tools ─────────────────────────────────────
 TOOLS = [
     {
         "name": "resmiGazeteAra",
@@ -53,9 +71,9 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "baslik": {"type": "string", "description": "Makale başlığı"},
-                "yazar": {"type": "string", "description": "Yazar adı"},
-                "anahtar": {"type": "string", "description": "Anahtar kelime"},
+                "baslik":  {"type": "string",  "description": "Makale başlığı"},
+                "yazar":   {"type": "string",  "description": "Yazar adı"},
+                "anahtar": {"type": "string",  "description": "Anahtar kelime"},
                 "sayfaNo": {"type": "integer", "description": "Sayfa numarası", "default": 1}
             }
         }
@@ -77,8 +95,8 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "query": {"type": "string", "description": "Arama sorgusu"},
-                "maxSonuc": {"type": "integer", "description": "Maksimum sonuç sayısı", "default": 3}
+                "query":     {"type": "string",  "description": "Arama sorgusu"},
+                "maxSonuc":  {"type": "integer", "description": "Maksimum sonuç sayısı", "default": 3}
             },
             "required": ["query"]
         }
@@ -89,7 +107,7 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "adi": {"type": "string", "description": "Milletvekilinin adı"},
+                "adi":    {"type": "string", "description": "Milletvekilinin adı"},
                 "soyadi": {"type": "string", "description": "Milletvekilinin soyadı"}
             }
         }
@@ -97,12 +115,14 @@ TOOLS = [
 ]
 
 TOOL_META = {
-    "resmiGazeteAra":  {"label": "Resmi Gazete",  "abbr": "RG", "color": "#3b82f6"},
-    "belletenAra":     {"label": "Belleten",       "abbr": "BL", "color": "#8b5cf6"},
-    "belletenOku":     {"label": "Makale Oku",     "abbr": "MO", "color": "#6d28d9"},
-    "tarihiGorselAra": {"label": "Görsel Arşiv",   "abbr": "GA", "color": "#10b981"},
-    "mazbataAra":      {"label": "TBMM Arşivi",    "abbr": "TB", "color": "#f59e0b"},
+    "resmiGazeteAra":  {"label": "Resmi Gazete", "abbr": "RG", "color": "#3b82f6"},
+    "belletenAra":     {"label": "Belleten",      "abbr": "BL", "color": "#8b5cf6"},
+    "belletenOku":     {"label": "Makale Oku",    "abbr": "MO", "color": "#6d28d9"},
+    "tarihiGorselAra": {"label": "Görsel Arşiv",  "abbr": "GA", "color": "#10b981"},
+    "mazbataAra":      {"label": "TBMM Arşivi",   "abbr": "TB", "color": "#f59e0b"},
 }
+
+DEFAULT_MODEL = "mimo-v2.5"
 
 
 def run_tool(name: str, inputs: dict) -> str:
@@ -128,14 +148,14 @@ def run_tool(name: str, inputs: dict) -> str:
 
 
 class ChatRequest(BaseModel):
-    messages: list
-    model: str = "claude-sonnet-4-5"
+    query: str
+    model: str = DEFAULT_MODEL
 
 
-async def stream_chat(messages: list, model: str) -> AsyncGenerator[str, None]:
+async def stream_chat(query: str, model: str) -> AsyncGenerator[str, None]:
     loop = asyncio.get_event_loop()
-
-    history = list(messages)
+    # Fresh context every request — no history
+    history = [{"role": "user", "content": query}]
 
     while True:
         response = await loop.run_in_executor(
@@ -149,40 +169,23 @@ async def stream_chat(messages: list, model: str) -> AsyncGenerator[str, None]:
             )
         )
 
-        # Stream assistant content
         tool_calls = []
-        text_parts = []
 
         for block in response.content:
             if block.type == "text":
-                text_parts.append(block.text)
                 yield f"data: {json.dumps({'type': 'text', 'text': block.text})}\n\n"
             elif block.type == "tool_use":
-                meta = TOOL_META.get(block.name, {"icon": "🔧", "label": block.name, "color": "#6b7280"})
-                tool_calls.append({
-                    "id": block.id,
-                    "name": block.name,
-                    "input": block.input,
-                    "meta": meta,
-                })
+                meta = TOOL_META.get(block.name, {"label": block.name, "abbr": "??", "color": "#6b7280"})
+                tool_calls.append({"id": block.id, "name": block.name, "input": block.input, "meta": meta})
                 yield f"data: {json.dumps({'type': 'tool_call', 'tool': block.name, 'input': block.input, 'meta': meta})}\n\n"
 
         if response.stop_reason == "tool_use":
-            # Build assistant message
             history.append({"role": "assistant", "content": response.content})
-
-            # Run tools
             tool_results = []
             for tc in tool_calls:
                 result = await loop.run_in_executor(None, lambda t=tc: run_tool(t["name"], t["input"]))
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": tc["id"],
-                    "content": result,
-                })
-                meta = tc["meta"]
-                yield f"data: {json.dumps({'type': 'tool_result', 'tool': tc['name'], 'result': result[:500], 'meta': meta})}\n\n"
-
+                tool_results.append({"type": "tool_result", "tool_use_id": tc["id"], "content": result})
+                yield f"data: {json.dumps({'type': 'tool_result', 'tool': tc['name'], 'result': result[:600], 'meta': tc['meta']})}\n\n"
             history.append({"role": "user", "content": tool_results})
             continue
 
@@ -192,18 +195,50 @@ async def stream_chat(messages: list, model: str) -> AsyncGenerator[str, None]:
 
 
 @app.post("/api/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, request: Request):
+    ip = request.client.host or "unknown"
+    allowed, used, reset_in = check_rate_limit(ip)
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "rate_limited",
+                "message": f"Saatte en fazla {RATE_LIMIT} soru sorabilirsiniz.",
+                "reset_in": reset_in,
+            }
+        )
     return StreamingResponse(
-        stream_chat(req.messages, req.model),
+        stream_chat(req.query, req.model or DEFAULT_MODEL),
         media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "X-RateLimit-Limit": str(RATE_LIMIT),
+            "X-RateLimit-Used": str(used),
+            "X-RateLimit-Remaining": str(max(0, RATE_LIMIT - used)),
+        }
     )
+
+
+@app.get("/api/rate-status")
+async def rate_status(request: Request):
+    ip = request.client.host or "unknown"
+    now = time.time()
+    timestamps = [t for t in _rate_store[ip] if t > now - RATE_WINDOW]
+    used = len(timestamps)
+    reset_in = int(RATE_WINDOW - (now - timestamps[0])) if timestamps else 0
+    return {
+        "limit": RATE_LIMIT,
+        "used": used,
+        "remaining": max(0, RATE_LIMIT - used),
+        "reset_in": reset_in,
+    }
 
 
 @app.get("/api/tools")
 def get_tools():
     return [
-        {**t, "meta": TOOL_META.get(t["name"], {"icon": "🔧", "label": t["name"], "color": "#6b7280"})}
+        {**t, "meta": TOOL_META.get(t["name"], {"label": t["name"], "abbr": "??", "color": "#6b7280"})}
         for t in TOOLS
     ]
 

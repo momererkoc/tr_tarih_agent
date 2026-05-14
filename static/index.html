@@ -1,687 +1,976 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Türkiye Tarih Araştırma Ajanı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --bg:        #0d0f14;
-    --surface:   #161920;
-    --surface2:  #1e2128;
-    --border:    #272b35;
-    --border2:   #31363f;
-    --text:      #e3e6ed;
-    --text2:     #9aa3b2;
-    --muted:     #5c6370;
-    --accent:    #5b8af4;
-    --accent-bg: rgba(91,138,244,.12);
-    --success:   #3ecf8e;
-    --warn:      #f0a429;
-    --radius:    10px;
-    --sidebar:   260px;
-    --font:      'Inter', system-ui, -apple-system, sans-serif;
-    --mono:      'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
-  }
+:root {
+  --white:   #ffffff;
+  --bg:      #f9fafb;
+  --border:  #e5e7eb;
+  --border2: #d1d5db;
+  --text:    #111827;
+  --text2:   #6b7280;
+  --muted:   #9ca3af;
+  --accent:  #2563eb;
+  --acc-dk:  #1d4ed8;
+  --success: #059669;
+  --warn:    #d97706;
+  --radius:  10px;
+}
 
-  body {
-    font-family: var(--font);
-    background: var(--bg);
-    color: var(--text);
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    font-size: 14px;
-    line-height: 1.5;
-  }
+html { font-size: 14px; }
 
-  /* ── Header ─────────────────────────────────── */
-  header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 0 20px;
-    height: 56px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .logo-mark {
-    width: 30px; height: 30px;
-    border-radius: 8px;
-    background: var(--accent);
-    display: grid; place-items: center;
-    flex-shrink: 0;
-  }
-  .logo-mark svg { width: 16px; height: 16px; fill: white; }
-  .header-title { font-size: 14px; font-weight: 600; letter-spacing: -.2px; }
-  .header-sub   { font-size: 11px; color: var(--muted); margin-top: 1px; }
-  .header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-  .model-badge {
-    background: transparent;
-    border: 1px solid var(--border2);
-    color: var(--text2);
-    padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 500;
-    cursor: pointer; transition: border-color .15s, color .15s;
-    user-select: none;
-  }
-  .model-badge:hover { border-color: var(--accent); color: var(--accent); }
-  .status-indicator {
-    display: flex; align-items: center; gap: 5px;
-    font-size: 11px; color: var(--muted);
-  }
-  .status-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--success);
-  }
-  .status-dot.loading {
-    background: var(--warn);
-    animation: pulse 1s ease infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--white);
+  color: var(--text);
+  height: 100dvh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-  /* ── Layout ──────────────────────────────────── */
-  .layout {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
+/* ── Scrollbar ───────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
 
-  /* ── Sidebar ─────────────────────────────────── */
-  aside {
-    width: var(--sidebar);
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-  .sidebar-section {
-    padding: 14px 14px 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .sidebar-label {
-    font-size: 10px; font-weight: 600; letter-spacing: .8px;
-    text-transform: uppercase; color: var(--muted);
-    margin-bottom: 10px;
-  }
-  .tool-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 10px; border-radius: 8px;
-    margin-bottom: 2px; cursor: default;
-    transition: background .15s;
-    position: relative;
-  }
-  .tool-item.active { background: var(--accent-bg); }
-  .tool-item.used   { background: var(--surface2); }
-  .tool-abbr {
-    width: 28px; height: 28px; border-radius: 6px;
-    display: grid; place-items: center;
-    font-size: 10px; font-weight: 700; font-family: var(--mono);
-    letter-spacing: 0;
-    background: var(--tc-bg, rgba(91,138,244,.15));
-    color: var(--tc, #5b8af4);
-    flex-shrink: 0;
-  }
-  .tool-info { flex: 1; min-width: 0; }
-  .tool-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tool-count {
-    font-size: 10px; font-family: var(--mono);
-    color: var(--muted); font-weight: 500;
-    min-width: 16px; text-align: right;
-  }
+/* ── Progress bar (top) ─────────── */
+#pbar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  width: 0%;
+  background: var(--accent);
+  z-index: 999;
+  transition: width .3s ease, opacity .4s ease;
+  opacity: 0;
+}
 
-  .activity-wrap {
-    flex: 1; display: flex; flex-direction: column; overflow: hidden;
-    padding: 0 0 8px;
-  }
-  .activity-header {
-    font-size: 10px; font-weight: 600; letter-spacing: .8px;
-    text-transform: uppercase; color: var(--muted);
-    padding: 12px 14px 8px;
-  }
-  .activity-list {
-    flex: 1; overflow-y: auto;
-    padding: 0 14px;
-  }
-  .activity-list::-webkit-scrollbar { width: 3px; }
-  .activity-list::-webkit-scrollbar-track { background: transparent; }
-  .activity-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  .activity-item {
-    padding: 7px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 11px;
-    display: flex; gap: 8px; align-items: flex-start;
-  }
-  .activity-item:last-child { border-bottom: none; }
-  .act-label {
-    font-size: 9px; font-weight: 700; font-family: var(--mono);
-    padding: 2px 5px; border-radius: 4px;
-    background: var(--tc-bg, rgba(91,138,244,.15));
-    color: var(--tc, #5b8af4);
-    flex-shrink: 0; margin-top: 1px;
-  }
-  .act-text { color: var(--text2); line-height: 1.4; }
-  .no-activity { font-size: 11px; color: var(--muted); text-align: center; padding: 20px 0; }
+/* ── SCREEN: HOME ───────────────── */
+#home {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--white);
+  transition: opacity .35s ease, transform .35s ease;
+}
+#home.leaving {
+  opacity: 0;
+  transform: translateY(-14px);
+  pointer-events: none;
+}
 
-  /* ── Chat ────────────────────────────────────── */
-  main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 28px 0;
-  }
-  .messages::-webkit-scrollbar { width: 5px; }
-  .messages::-webkit-scrollbar-track { background: transparent; }
-  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+.home-label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
 
-  /* Welcome */
-  .welcome {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; min-height: 60vh; text-align: center; padding: 40px 24px;
-  }
-  .welcome-icon {
-    width: 52px; height: 52px;
-    background: var(--accent-bg);
-    border: 1px solid rgba(91,138,244,.3);
-    border-radius: 16px;
-    display: grid; place-items: center;
-    margin-bottom: 18px;
-  }
-  .welcome-icon svg { width: 24px; height: 24px; fill: var(--accent); }
-  .welcome h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-  .welcome p { color: var(--text2); font-size: 13px; max-width: 400px; line-height: 1.6; }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 20px; }
-  .chip {
-    padding: 7px 14px; border-radius: 20px;
-    border: 1px solid var(--border2);
-    background: var(--surface); font-size: 12px; color: var(--text2);
-    cursor: pointer; transition: border-color .15s, color .15s, background .15s;
-  }
-  .chip:hover { border-color: var(--accent); color: var(--text); background: var(--accent-bg); }
+.home-title {
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 600;
+  letter-spacing: -.6px;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.2;
+  margin-bottom: 8px;
+  max-width: 560px;
+}
 
-  /* Message rows */
-  .msg-row {
-    padding: 4px 24px;
-    max-width: 860px;
-    margin: 0 auto;
-    width: 100%;
-  }
+.home-sub {
+  font-size: 14px;
+  color: var(--text2);
+  text-align: center;
+  margin-bottom: 36px;
+  max-width: 440px;
+  line-height: 1.6;
+}
 
-  .msg-user {
-    display: flex; justify-content: flex-end; margin-bottom: 4px;
-  }
-  .user-bubble {
-    max-width: 72%;
-    background: var(--accent);
-    color: #fff;
-    padding: 10px 15px;
-    border-radius: 18px 18px 4px 18px;
-    font-size: 14px; line-height: 1.55;
-    white-space: pre-wrap; word-break: break-word;
-  }
+.home-input-wrap {
+  width: 100%;
+  max-width: 580px;
+  position: relative;
+}
 
-  .msg-assistant { margin-bottom: 4px; }
-  .asst-header {
-    display: flex; align-items: center; gap: 7px;
-    margin-bottom: 8px;
-  }
-  .asst-avatar {
-    width: 22px; height: 22px;
-    background: var(--accent-bg);
-    border: 1px solid rgba(91,138,244,.3);
-    border-radius: 6px;
-    display: grid; place-items: center;
-    flex-shrink: 0;
-  }
-  .asst-avatar svg { width: 12px; height: 12px; fill: var(--accent); }
-  .asst-name { font-size: 12px; font-weight: 600; color: var(--text2); }
+.home-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  background: var(--white);
+  border: 1.5px solid var(--border2);
+  border-radius: 14px;
+  padding: 14px 14px 14px 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+  transition: border-color .2s, box-shadow .2s;
+}
+.home-input-row:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1), 0 4px 16px rgba(0,0,0,.06);
+}
 
-  .asst-content { padding-left: 29px; }
-  .asst-text {
-    font-size: 14px; line-height: 1.65;
-    color: var(--text);
-  }
-  .asst-text h2 { font-size: 15px; font-weight: 700; margin: 14px 0 6px; }
-  .asst-text h3 { font-size: 14px; font-weight: 600; margin: 10px 0 4px; }
-  .asst-text ul, .asst-text ol { padding-left: 20px; margin: 6px 0; }
-  .asst-text li { margin-bottom: 3px; }
-  .asst-text code {
-    background: var(--surface2); border: 1px solid var(--border);
-    padding: 1px 5px; border-radius: 4px;
-    font-family: var(--mono); font-size: 92%;
-  }
-  .asst-text strong { font-weight: 600; color: var(--text); }
-  .asst-text em { font-style: italic; }
-  .asst-text p { margin-bottom: 8px; }
-  .asst-text p:last-child { margin-bottom: 0; }
+.home-input-row textarea {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  resize: none;
+  max-height: 160px;
+  line-height: 1.55;
+}
+.home-input-row textarea::placeholder { color: var(--muted); }
 
-  /* Tool call cards - always inside asst-content */
-  .tool-calls-group { margin: 10px 0; display: flex; flex-direction: column; gap: 6px; }
-  .tc-card {
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--surface);
-    overflow: hidden;
-    font-size: 12px;
-  }
-  .tc-card.done { border-color: var(--border2); }
-  .tc-header {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 12px;
-    cursor: pointer;
-    user-select: none;
-    transition: background .15s;
-  }
-  .tc-header:hover { background: var(--surface2); }
-  .tc-abbr {
-    font-size: 9px; font-weight: 700; font-family: var(--mono);
-    padding: 2px 5px; border-radius: 4px;
-    background: var(--tc-bg, rgba(91,138,244,.15));
-    color: var(--tc, #5b8af4);
-    flex-shrink: 0;
-  }
-  .tc-tool-name { font-weight: 500; flex: 1; color: var(--text); }
-  .tc-status {
-    font-size: 10px; padding: 2px 7px; border-radius: 10px;
-    background: rgba(240,164,41,.12); color: var(--warn);
-    display: flex; align-items: center; gap: 4px;
-  }
-  .tc-status.done { background: rgba(62,207,142,.12); color: var(--success); }
-  .tc-status-dot {
-    width: 5px; height: 5px; border-radius: 50%;
-    background: currentColor;
-    animation: pulse 1s ease infinite;
-  }
-  .tc-status.done .tc-status-dot { animation: none; }
-  .tc-chevron {
-    width: 16px; height: 16px; color: var(--muted);
-    transition: transform .2s; flex-shrink: 0;
-  }
-  .tc-chevron svg { width: 16px; height: 16px; fill: currentColor; }
-  .tc-card.collapsed .tc-chevron { transform: rotate(-90deg); }
-  .tc-body {
-    padding: 10px 12px;
-    border-top: 1px solid var(--border);
-    background: var(--surface2);
-  }
-  .tc-card.collapsed .tc-body { display: none; }
-  .tc-label {
-    font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
-    color: var(--muted); margin-bottom: 5px; font-weight: 600;
-  }
-  .tc-pre {
-    font-family: var(--mono); font-size: 11px; color: var(--text2);
-    white-space: pre-wrap; word-break: break-all; line-height: 1.5;
-  }
-  .tc-result {
-    margin-top: 10px; padding-top: 10px;
-    border-top: 1px solid var(--border);
-  }
-  .tc-result .tc-pre { color: var(--text); }
+.home-send {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  background: var(--accent);
+  border: none; cursor: pointer;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  transition: background .15s, transform .1s;
+}
+.home-send:hover { background: var(--acc-dk); }
+.home-send:active { transform: scale(.94); }
+.home-send:disabled { opacity: .3; cursor: not-allowed; }
+.home-send svg { width: 14px; height: 14px; fill: white; }
 
-  /* Typing */
-  .typing { display: flex; gap: 3px; align-items: center; padding: 6px 0; }
-  .typing span {
-    width: 5px; height: 5px; border-radius: 50%; background: var(--muted);
-    animation: bounce .8s ease infinite;
-  }
-  .typing span:nth-child(2) { animation-delay: .15s; }
-  .typing span:nth-child(3) { animation-delay: .3s; }
-  @keyframes bounce {
-    0%,100% { transform: translateY(0); opacity:.35; }
-    50%      { transform: translateY(-4px); opacity:1; }
-  }
+.home-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 20px;
+  max-width: 580px;
+}
+.chip {
+  padding: 7px 15px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  font-size: 12.5px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+  font-family: inherit;
+}
+.chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(37,99,235,.04);
+}
 
-  /* Input bar */
-  .input-bar {
-    padding: 14px 24px;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-  }
-  .input-inner {
-    max-width: 860px;
-    margin: 0 auto;
-    display: flex; gap: 10px; align-items: flex-end;
-  }
-  .input-wrap {
-    flex: 1;
-    background: var(--bg);
-    border: 1px solid var(--border2);
-    border-radius: 12px;
-    display: flex; align-items: flex-end;
-    padding: 10px 14px;
-    gap: 8px;
-    transition: border-color .15s;
-  }
-  .input-wrap:focus-within { border-color: var(--accent); }
-  textarea {
-    flex: 1; background: transparent; border: none; outline: none;
-    color: var(--text); font-size: 14px; line-height: 1.5;
-    resize: none; max-height: 140px; font-family: inherit;
-  }
-  textarea::placeholder { color: var(--muted); }
-  .send-btn {
-    width: 36px; height: 36px; border-radius: 9px;
-    background: var(--accent); border: none; cursor: pointer;
-    display: grid; place-items: center;
-    transition: opacity .15s, transform .1s;
-    flex-shrink: 0;
-  }
-  .send-btn:hover { opacity: .85; }
-  .send-btn:active { transform: scale(.94); }
-  .send-btn:disabled { opacity: .3; cursor: not-allowed; }
-  .send-btn svg { width: 15px; height: 15px; fill: white; }
+.home-footer {
+  position: absolute;
+  bottom: 24px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .02em;
+}
+
+/* ── SCREEN: ANSWER ─────────────── */
+#answer {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .35s ease;
+}
+#answer.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Top bar */
+.topbar {
+  height: 54px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 12px;
+  flex-shrink: 0;
+  background: var(--white);
+}
+.topbar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -.2px;
+}
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tb-badge {
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text2);
+  background: var(--white);
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+  font-family: 'Inter', monospace;
+}
+.tb-badge:hover { border-color: var(--accent); color: var(--accent); }
+
+.rate-wrap {
+  display: flex; align-items: center; gap: 7px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text2);
+  background: var(--white);
+}
+.rate-track {
+  width: 40px; height: 3px;
+  border-radius: 99px;
+  background: var(--border);
+  overflow: hidden;
+}
+.rate-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent);
+  transition: width .4s ease, background .3s;
+}
+.rate-fill.warn { background: var(--warn); }
+.rate-fill.over { background: #dc2626; }
+
+/* Scrollable content */
+.ans-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 24px 24px;
+}
+.ans-inner {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Query heading */
+.ans-query-block {
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.ans-query-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.ans-query-text {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -.3px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* Steps / progress */
+.steps-section {
+  margin-bottom: 20px;
+}
+.steps-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 12.5px;
+  animation: step-in .25s ease;
+  transition: border-color .3s, background .3s;
+}
+.step-item.done {
+  border-color: rgba(5,150,105,.2);
+  background: rgba(5,150,105,.03);
+}
+@keyframes step-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.step-abbr {
+  font-size: 9.5px;
+  font-weight: 700;
+  font-family: 'Inter', monospace;
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: var(--tc-bg, rgba(37,99,235,.08));
+  color: var(--tc, var(--accent));
+  border: 1px solid var(--tc-border, rgba(37,99,235,.15));
+  letter-spacing: .03em;
+  flex-shrink: 0;
+}
+
+.step-name {
+  font-weight: 500;
+  color: var(--text);
+  flex: 1;
+}
+
+.step-status {
+  font-size: 11.5px;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.step-item.done .step-status { color: var(--success); }
+
+.spinner {
+  width: 12px; height: 12px;
+  border: 1.5px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.check {
+  width: 14px; height: 14px;
+  flex-shrink: 0;
+}
+.check svg { width: 14px; height: 14px; display: block; }
+
+/* Thinking state */
+.thinking-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  font-size: 12.5px;
+  color: var(--text2);
+}
+.thinking-dots {
+  display: flex; gap: 3px;
+}
+.thinking-dots span {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: .35;
+  animation: tdot .9s ease infinite;
+}
+.thinking-dots span:nth-child(2) { animation-delay: .15s; }
+.thinking-dots span:nth-child(3) { animation-delay: .30s; }
+@keyframes tdot {
+  0%,100% { opacity: .25; transform: scale(.85); }
+  50%      { opacity: 1;   transform: scale(1.1); }
+}
+
+/* Answer text */
+.ans-text {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text);
+  animation: fadein .3s ease;
+}
+@keyframes fadein {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.ans-text h2 {
+  font-size: 16px; font-weight: 700;
+  letter-spacing: -.2px;
+  margin: 20px 0 8px; color: var(--text);
+}
+.ans-text h3 {
+  font-size: 15px; font-weight: 600;
+  margin: 16px 0 6px;
+}
+.ans-text p  { margin-bottom: 10px; }
+.ans-text p:last-child { margin-bottom: 0; }
+.ans-text ul, .ans-text ol { padding-left: 22px; margin: 8px 0; }
+.ans-text li { margin-bottom: 4px; }
+.ans-text strong { font-weight: 600; }
+.ans-text em { font-style: italic; color: var(--text2); }
+.ans-text code {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 90%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 5px;
+  color: var(--acc-dk);
+}
+.ans-text a { color: var(--accent); text-decoration: none; }
+.ans-text a:hover { text-decoration: underline; }
+
+/* Tool result cards (collapsed, below answer) */
+.sources-section {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.sources-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.source-cards { display: flex; flex-direction: column; gap: 6px; }
+.src-card {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--white);
+  overflow: hidden;
+  transition: box-shadow .2s;
+}
+.src-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+.src-head {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 13px;
+  cursor: pointer;
+  user-select: none;
+}
+.src-abbr {
+  font-size: 9.5px; font-weight: 700;
+  font-family: 'Inter', monospace;
+  padding: 3px 6px; border-radius: 5px;
+  background: var(--tc-bg, rgba(37,99,235,.08));
+  color: var(--tc, var(--accent));
+  border: 1px solid var(--tc-border, rgba(37,99,235,.15));
+  flex-shrink: 0;
+}
+.src-name { font-size: 12.5px; font-weight: 500; flex: 1; color: var(--text); }
+.src-toggle {
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform .2s;
+}
+.src-card.open .src-toggle { transform: rotate(180deg); }
+.src-body {
+  display: none;
+  padding: 10px 13px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+.src-card.open .src-body { display: block; }
+.src-pre {
+  font-size: 11px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text2);
+  line-height: 1.55;
+}
+
+/* Bottom input bar */
+.ans-input-bar {
+  padding: 12px 24px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--white);
+  flex-shrink: 0;
+}
+.ans-input-inner {
+  max-width: 700px;
+  margin: 0 auto;
+  display: flex;
+  gap: 9px;
+  align-items: flex-end;
+}
+.ans-input-row {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  background: var(--bg);
+  border: 1.5px solid var(--border2);
+  border-radius: 12px;
+  padding: 10px 13px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.ans-input-row:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  background: var(--white);
+}
+.ans-input-row textarea {
+  flex: 1; border: none; outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text);
+  resize: none;
+  max-height: 120px;
+  line-height: 1.5;
+}
+.ans-input-row textarea::placeholder { color: var(--muted); }
+.ans-send {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  background: var(--accent);
+  border: none; cursor: pointer;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  transition: background .15s, transform .1s;
+}
+.ans-send:hover { background: var(--acc-dk); }
+.ans-send:active { transform: scale(.93); }
+.ans-send:disabled { opacity: .3; cursor: not-allowed; }
+.ans-send svg { width: 14px; height: 14px; fill: white; }
+
+/* Rate limit banner */
+.rl-bar {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  font-size: 12px;
+  color: #dc2626;
+  margin-bottom: 8px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  animation: fadein .3s ease;
+}
+.rl-bar.show { display: flex; }
 </style>
 </head>
 <body>
 
-<!-- Header -->
-<header>
-  <div class="logo-mark">
-    <svg viewBox="0 0 24 24"><path d="M12 3L2 9v6l10 6 10-6V9L12 3zm0 2.18L19.5 9.5 12 13.82 4.5 9.5 12 5.18zM4 11.12l7.5 4.32V20.6L4 16.28v-5.16zm9.5 4.32L21 11.12v5.16l-7.5 4.32v-5.16z"/></svg>
-  </div>
-  <div>
-    <div class="header-title">Türkiye Tarih Araştırma Ajanı</div>
-    <div class="header-sub">Resmi Gazete · Belleten · TTK · TBMM</div>
-  </div>
-  <div class="header-right">
-    <span class="model-badge" id="modelBadge" title="Model değiştirmek için tıklayın">claude-sonnet-4-5</span>
-    <div class="status-indicator">
-      <div class="status-dot" id="statusDot"></div>
-      <span id="statusText">Hazır</span>
-    </div>
-  </div>
-</header>
+<!-- Progress bar -->
+<div id="pbar"></div>
 
-<div class="layout">
-  <!-- Sidebar -->
-  <aside>
-    <div class="sidebar-section">
-      <div class="sidebar-label">Araçlar</div>
-      <div id="toolList"></div>
+<!-- ── SCREEN: HOME ──────────────────── -->
+<div id="home">
+  <p class="home-label">Türkiye · Tarih · Araştırma</p>
+  <h1 class="home-title">Ne araştırmak istiyorsunuz?</h1>
+  <p class="home-sub">Resmi Gazete, Belleten Dergisi, TTK Görsel Arşivi ve TBMM kayıtlarına tek noktadan erişin.</p>
+
+  <div class="home-input-wrap">
+    <div class="home-input-row">
+      <textarea id="homeInput" rows="1"
+        placeholder="Örn: Lozan Antlaşması'nın Resmi Gazete kaydını bul…"
+        oninput="autoResize(this)"
+        onkeydown="handleHomeKey(event)"></textarea>
+      <button class="home-send" id="homeSend" onclick="startSearch()" title="Ara">
+        <svg viewBox="0 0 24 24"><path d="M21 11H6.83l3.58-3.59L9 6l-6 6 6 6 1.41-1.41L6.83 13H21z" transform="rotate(180 12 12)"/><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
     </div>
-    <div class="activity-wrap">
-      <div class="activity-header">Aktivite</div>
-      <div class="activity-list" id="activityList">
-        <div class="no-activity">Henüz aktivite yok</div>
+    <div class="home-chips">
+      <button class="chip" onclick="fillAndSearch('Atatürk hakkında Belleten makalelerini ara')">Atatürk · Belleten</button>
+      <button class="chip" onclick="fillAndSearch('Halikarnas Balıkçısı mazbatasını ara')">TBMM Mazbatası</button>
+      <button class="chip" onclick="fillAndSearch('Kurtuluş Savaşı fotoğraflarını ara')">TTK Görseller</button>
+      <button class="chip" onclick="fillAndSearch('Lozan Antlaşması Resmi Gazete kaydını bul')">Resmi Gazete</button>
+    </div>
+  </div>
+
+  <p class="home-footer">Resmi Gazete · Belleten · TTK Arşivi · TBMM Kayıtları</p>
+</div>
+
+<!-- ── SCREEN: ANSWER ─────────────────── -->
+<div id="answer">
+  <!-- Top bar -->
+  <div class="topbar">
+    <span class="topbar-title">Tarih Araştırma Ajanı</span>
+    <div class="topbar-right">
+      <div class="rate-wrap" id="rateWrap">
+        <div class="rate-track"><div class="rate-fill" id="rateFill" style="width:0%"></div></div>
+        <span id="rateTxt">0 / 10</span>
       </div>
+      <div class="tb-badge" id="modelBadge" onclick="cycleModel()" title="Model değiştir">mimo-v2.5</div>
+      <div class="tb-badge" id="statusBadge">Hazır</div>
     </div>
-  </aside>
+  </div>
 
-  <!-- Chat -->
-  <main>
-    <div class="messages" id="messages">
-      <div class="msg-row">
-        <div class="welcome" id="welcome">
-          <div class="welcome-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 3L2 9v6l10 6 10-6V9L12 3zm0 2.18L19.5 9.5 12 13.82 4.5 9.5 12 5.18zM4 11.12l7.5 4.32V20.6L4 16.28v-5.16zm9.5 4.32L21 11.12v5.16l-7.5 4.32v-5.16z"/></svg>
-          </div>
-          <h2>Tarih Araştırma Ajanı</h2>
-          <p>Resmi Gazete, Belleten Dergisi, TTK Görsel Arşivi ve TBMM kayıtlarında kapsamlı araştırma yapın.</p>
-          <div class="chips">
-            <div class="chip" onclick="sendSuggestion('Atatürk hakkında Belleten makalelerini ara')">Atatürk / Belleten</div>
-            <div class="chip" onclick="sendSuggestion('Halikarnas Balıkçısı mazbatasını ara')">TBMM Mazbatası</div>
-            <div class="chip" onclick="sendSuggestion('Kurtuluş Savaşı fotoğraflarını ara')">Tarihi Görseller</div>
-            <div class="chip" onclick="sendSuggestion('Lozan Antlaşması Resmi Gazete kaydını bul')">Resmi Gazete</div>
+  <!-- Scrollable -->
+  <div class="ans-scroll" id="ansScroll">
+    <div class="ans-inner">
+
+      <!-- Query display -->
+      <div class="ans-query-block" id="queryBlock">
+        <div class="ans-query-label">Sorgu</div>
+        <div class="ans-query-text" id="queryText"></div>
+      </div>
+
+      <!-- Steps / progress -->
+      <div class="steps-section" id="stepsSection">
+        <div class="steps-label">Araştırma adımları</div>
+        <div class="steps-list" id="stepsList">
+          <!-- Thinking row (initial) -->
+          <div class="thinking-row" id="thinkingRow">
+            <div class="thinking-dots"><span></span><span></span><span></span></div>
+            <span>Sorgunuz analiz ediliyor…</span>
           </div>
         </div>
       </div>
-    </div>
-    <div class="input-bar">
-      <div class="input-inner">
-        <div class="input-wrap">
-          <textarea id="input" rows="1" placeholder="Araştırmak istediğiniz konuyu yazın…"
-            onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-        </div>
-        <button class="send-btn" id="sendBtn" onclick="send()" title="Gönder">
-          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-        </button>
+
+      <!-- Answer text -->
+      <div class="ans-text" id="ansText"></div>
+
+      <!-- Source cards (populated after done) -->
+      <div class="sources-section" id="sourcesSection" style="display:none">
+        <div class="sources-label">Kaynak detayları</div>
+        <div class="source-cards" id="sourceCards"></div>
       </div>
+
     </div>
-  </main>
+  </div>
+
+  <!-- Rate limit banner -->
+  <div class="rl-bar" id="rlBar">
+    <span id="rlMsg">Saatlik sorgu limitine ulaştınız.</span>
+  </div>
+
+  <!-- Bottom input bar -->
+  <div class="ans-input-bar">
+    <div class="ans-input-inner">
+      <div class="ans-input-row">
+        <textarea id="ansInput" rows="1"
+          placeholder="Yeni bir araştırma sorusu yazın…"
+          oninput="autoResize(this)"
+          onkeydown="handleAnsKey(event)"></textarea>
+      </div>
+      <button class="ans-send" id="ansSend" onclick="newSearch()" title="Yeni arama">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
-const MODELS = ["claude-sonnet-4-5", "claude-haiku-4-5-20251001", "claude-opus-4-7"];
+// ── State ─────────────────────────────────────
+const MODELS    = ["mimo-v2.5", "claude-sonnet-4-5", "claude-haiku-4-5-20251001"];
+const RATE_MAX  = 10;
 let currentModel = MODELS[0];
-let isLoading = false;
-let messages = [];
+let isLoading    = false;
+let rateUsed     = 0;
+let TOOL_META    = {};
 
-// ── Tool metadata ─────────────────────────────
-const TOOL_META = {};
-let toolUseCounts = {};
-
+// ── Tool meta (loaded from /api/tools) ────────
 async function loadTools() {
-  const res = await fetch('/api/tools');
-  const tools = await res.json();
-  const list = document.getElementById('toolList');
-  list.innerHTML = '';
-  tools.forEach(t => {
-    TOOL_META[t.name] = t.meta;
-    toolUseCounts[t.name] = 0;
-    const item = document.createElement('div');
-    item.className = 'tool-item';
-    item.id = `tool-${t.name}`;
-    const abbr = t.meta.abbr || t.meta.label.slice(0,2).toUpperCase();
-    item.style.setProperty('--tc', t.meta.color);
-    item.style.setProperty('--tc-bg', hexToRgba(t.meta.color, .14));
-    item.innerHTML = `
-      <div class="tool-abbr">${abbr}</div>
-      <div class="tool-info">
-        <div class="tool-name">${t.meta.label}</div>
-      </div>
-      <div class="tool-count" id="cnt-${t.name}">—</div>`;
-    list.appendChild(item);
-  });
+  try {
+    const res = await fetch('/api/tools');
+    const tools = await res.json();
+    tools.forEach(t => { TOOL_META[t.name] = t.meta; });
+  } catch {}
 }
 
-function hexToRgba(hex, alpha) {
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
-  return `rgba(${r},${g},${b},${alpha})`;
+function tcColor(name) {
+  return TOOL_META[name]?.color || '#2563eb';
+}
+function tcAbbr(name) {
+  return TOOL_META[name]?.abbr || name.slice(0,2).toUpperCase();
+}
+function tcLabel(name) {
+  return TOOL_META[name]?.label || name;
+}
+function hexRgba(hex, a) {
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
 }
 
-function flashToolItem(name) {
-  toolUseCounts[name] = (toolUseCounts[name] || 0) + 1;
-  const item = document.getElementById(`tool-${name}`);
-  const cnt  = document.getElementById(`cnt-${name}`);
-  if (item) { item.classList.remove('used'); item.classList.add('active'); }
-  if (cnt)  cnt.textContent = toolUseCounts[name];
-  setTimeout(() => { item?.classList.remove('active'); item?.classList.add('used'); }, 1400);
+// ── Rate display ──────────────────────────────
+function setRate(used) {
+  rateUsed = used;
+  const pct = (used / RATE_MAX) * 100;
+  const fill = document.getElementById('rateFill');
+  const txt  = document.getElementById('rateTxt');
+  fill.style.width = pct + '%';
+  fill.className = 'rate-fill' + (pct >= 100 ? ' over' : pct >= 70 ? ' warn' : '');
+  txt.textContent = `${used} / ${RATE_MAX}`;
 }
 
-function addActivity(name, input) {
-  const meta = TOOL_META[name] || { label: name, color: '#5b8af4', abbr: '??' };
-  const al = document.getElementById('activityList');
-  const no = al.querySelector('.no-activity');
-  if (no) no.remove();
-  const abbr = meta.abbr || meta.label.slice(0,2).toUpperCase();
-  const args = Object.entries(input).map(([k,v]) => `${k}: ${String(v).slice(0,40)}`).join(' · ');
-  const item = document.createElement('div');
-  item.className = 'activity-item';
-  item.style.setProperty('--tc', meta.color);
-  item.style.setProperty('--tc-bg', hexToRgba(meta.color, .14));
-  item.innerHTML = `<div class="act-label">${abbr}</div><div class="act-text">${escHtml(args)}</div>`;
-  al.prepend(item);
+async function loadRate() {
+  try {
+    const r = await fetch('/api/rate-status');
+    const d = await r.json();
+    setRate(d.used);
+  } catch {}
 }
 
-// ── DOM helpers ───────────────────────────────
-const msgsEl = document.getElementById('messages');
+// ── Progress bar ──────────────────────────────
+let _ptimer = null;
+let _pval   = 0;
 
-function hideWelcome() {
-  const w = document.getElementById('welcome');
-  if (w) w.closest('.msg-row')?.remove();
+function pbarStart() {
+  const b = document.getElementById('pbar');
+  b.style.transition = 'none';
+  b.style.opacity = '1';
+  b.style.width   = '0%';
+  _pval = 0;
+  clearInterval(_ptimer);
+  _ptimer = setInterval(() => {
+    if (_pval < 78) {
+      _pval += (78 - _pval) * .04 + .4;
+      b.style.transition = 'width .4s ease';
+      b.style.width = _pval + '%';
+    }
+  }, 250);
 }
 
-function scrollBottom() {
-  msgsEl.scrollTop = msgsEl.scrollHeight;
+function pbarDone() {
+  clearInterval(_ptimer);
+  const b = document.getElementById('pbar');
+  b.style.transition = 'width .25s ease';
+  b.style.width = '100%';
+  setTimeout(() => {
+    b.style.transition = 'opacity .4s ease';
+    b.style.opacity = '0';
+  }, 280);
 }
 
-function addUserRow(text) {
-  hideWelcome();
-  const row = document.createElement('div');
-  row.className = 'msg-row';
-  row.innerHTML = `<div class="msg-user"><div class="user-bubble">${escHtml(text)}</div></div>`;
-  msgsEl.appendChild(row);
-  scrollBottom();
-}
+// ── Screen transition ─────────────────────────
+function showAnswerScreen(query) {
+  // Update query display
+  document.getElementById('queryText').textContent = query;
 
-// Creates and returns the asst container (.asst-content div) for streaming into
-function createAsstRow() {
-  hideWelcome();
-  const row = document.createElement('div');
-  row.className = 'msg-row';
-  row.innerHTML = `
-    <div class="msg-assistant">
-      <div class="asst-header">
-        <div class="asst-avatar">
-          <svg viewBox="0 0 24 24"><path d="M12 3L2 9v6l10 6 10-6V9L12 3zm0 2.18L19.5 9.5 12 13.82 4.5 9.5 12 5.18zM4 11.12l7.5 4.32V20.6L4 16.28v-5.16zm9.5 4.32L21 11.12v5.16l-7.5 4.32v-5.16z"/></svg>
-        </div>
-        <div class="asst-name">Tarih Ajanı</div>
-      </div>
-      <div class="asst-content" id="asst-content-current">
-        <div class="asst-text" id="asst-text-current"><div class="typing"><span></span><span></span><span></span></div></div>
-      </div>
+  // Clear previous answer
+  document.getElementById('stepsList').innerHTML = `
+    <div class="thinking-row" id="thinkingRow">
+      <div class="thinking-dots"><span></span><span></span><span></span></div>
+      <span>Sorgunuz analiz ediliyor…</span>
     </div>`;
-  msgsEl.appendChild(row);
-  scrollBottom();
-  return {
-    content: document.getElementById('asst-content-current'),
-    textEl: document.getElementById('asst-text-current'),
-  };
+  document.getElementById('ansText').innerHTML = '';
+  document.getElementById('sourcesSection').style.display = 'none';
+  document.getElementById('sourceCards').innerHTML = '';
+  document.getElementById('rlBar').classList.remove('show');
+  document.getElementById('stepsSection').style.display = 'block';
+
+  // Transition
+  document.getElementById('home').classList.add('leaving');
+  setTimeout(() => {
+    document.getElementById('home').style.display = 'none';
+    document.getElementById('answer').classList.add('visible');
+    document.getElementById('ansScroll').scrollTop = 0;
+  }, 340);
 }
 
-// ── Current response state ─────────────────────
-let asstContent   = null;  // .asst-content div
-let asstTextEl    = null;  // current .asst-text div receiving streamed text
-let currentText   = '';
-let tcGroup       = null;  // current .tool-calls-group div
-let tcIdCounter   = 0;
+// ── Steps ─────────────────────────────────────
+const stepIds = {}; // name → dom id (for result matching)
+let stepQueue = []; // FIFO for tool_result matching
 
-function ensureTextEl() {
-  // If there's no active text element (e.g., after tool cards), create a new one
-  if (!asstTextEl) {
-    const t = document.createElement('div');
-    t.className = 'asst-text';
-    asstContent.appendChild(t);
-    asstTextEl = t;
-    currentText = '';
-  }
+function removeThinking() {
+  document.getElementById('thinkingRow')?.remove();
 }
 
-function appendText(text) {
-  ensureTextEl();
-  currentText += text;
-  asstTextEl.innerHTML = markdownToHtml(currentText);
-  scrollBottom();
+function addStep(name) {
+  removeThinking();
+  const color  = tcColor(name);
+  const abbr   = tcAbbr(name);
+  const label  = tcLabel(name);
+  const id     = `step-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  stepQueue.push(id);
+
+  const el = document.createElement('div');
+  el.className = 'step-item';
+  el.id = id;
+  el.style.setProperty('--tc',       color);
+  el.style.setProperty('--tc-bg',    hexRgba(color, .08));
+  el.style.setProperty('--tc-border',hexRgba(color, .18));
+  el.innerHTML = `
+    <div class="step-abbr">${abbr}</div>
+    <div class="step-name">${label}</div>
+    <div class="step-status">
+      <div class="spinner"></div>
+      <span>çalışıyor</span>
+    </div>`;
+  document.getElementById('stepsList').appendChild(el);
+  scrollAns();
 }
 
-function addToolCallCard(name, input, localId) {
-  const meta = TOOL_META[name] || { label: name, color: '#5b8af4', abbr: '??' };
-  const abbr = meta.abbr || meta.label.slice(0,2).toUpperCase();
-
-  // Close current text element so next text appears after tool group
-  asstTextEl = null;
-  currentText = '';
-
-  // Create or reuse group
-  if (!tcGroup) {
-    tcGroup = document.createElement('div');
-    tcGroup.className = 'tool-calls-group';
-    asstContent.appendChild(tcGroup);
-  }
-
-  const card = document.createElement('div');
-  card.className = 'tc-card collapsed';
-  card.id = `tc-${localId}`;
-  card.style.setProperty('--tc', meta.color);
-  card.style.setProperty('--tc-bg', hexToRgba(meta.color, .14));
-  card.innerHTML = `
-    <div class="tc-header" onclick="toggleTcCard('tc-${localId}')">
-      <div class="tc-abbr">${abbr}</div>
-      <div class="tc-tool-name">${meta.label}</div>
-      <div class="tc-status" id="tc-status-${localId}">
-        <div class="tc-status-dot"></div>Çalışıyor
-      </div>
-      <div class="tc-chevron"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></div>
+function doneStep(id, result) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('done');
+  el.querySelector('.step-status').innerHTML = `
+    <div class="check">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
     </div>
-    <div class="tc-body">
-      <div class="tc-label">Parametreler</div>
-      <pre class="tc-pre">${escHtml(JSON.stringify(input, null, 2))}</pre>
-      <div class="tc-result" id="tc-result-${localId}" style="display:none">
-        <div class="tc-label">Sonuç</div>
-        <pre class="tc-pre"></pre>
-      </div>
+    <span>tamamlandı</span>`;
+
+  // Add source card
+  const color = el.style.getPropertyValue('--tc').trim();
+  const abbr  = el.querySelector('.step-abbr').textContent;
+  const label = el.querySelector('.step-name').textContent;
+  addSourceCard(abbr, label, color, result);
+}
+
+// ── Source cards ──────────────────────────────
+function addSourceCard(abbr, label, color, result) {
+  const ss = document.getElementById('sourcesSection');
+  ss.style.display = 'block';
+  const cards = document.getElementById('sourceCards');
+  const id = `sc-${Date.now()}`;
+  const el = document.createElement('div');
+  el.className = 'src-card';
+  el.style.setProperty('--tc',        color);
+  el.style.setProperty('--tc-bg',     hexRgba(color, .08));
+  el.style.setProperty('--tc-border', hexRgba(color, .18));
+  el.innerHTML = `
+    <div class="src-head" onclick="toggleSrc('${id}')">
+      <div class="src-abbr">${abbr}</div>
+      <div class="src-name">${label}</div>
+      <div class="src-toggle">▾</div>
+    </div>
+    <div class="src-body">
+      <pre class="src-pre">${esc(result)}</pre>
     </div>`;
-  tcGroup.appendChild(card);
-  scrollBottom();
+  el.id = id;
+  cards.appendChild(el);
 }
 
-function finishToolCallCard(localId, result) {
-  const statusEl = document.getElementById(`tc-status-${localId}`);
-  if (statusEl) {
-    statusEl.innerHTML = '<div class="tc-status-dot"></div>Tamamlandı';
-    statusEl.className = 'tc-status done';
-  }
-  const resultEl = document.getElementById(`tc-result-${localId}`);
-  if (resultEl) {
-    resultEl.style.display = 'block';
-    resultEl.querySelector('.tc-pre').textContent = result;
-  }
+function toggleSrc(id) {
+  document.getElementById(id)?.classList.toggle('open');
+  scrollAns();
 }
 
-function toggleTcCard(id) {
-  document.getElementById(id)?.classList.toggle('collapsed');
-  scrollBottom();
+// ── Answer text ───────────────────────────────
+let _ansText = '';
+
+function appendAnswer(chunk) {
+  _ansText += chunk;
+  document.getElementById('ansText').innerHTML = renderMd(_ansText);
+  scrollAns();
 }
 
-// ── Send ──────────────────────────────────────
-async function send() {
-  const input = document.getElementById('input');
-  const text = input.value.trim();
-  if (!text || isLoading) return;
-  input.value = '';
-  autoResize(input);
+function scrollAns() {
+  const s = document.getElementById('ansScroll');
+  s.scrollTo({ top: s.scrollHeight, behavior: 'smooth' });
+}
+
+// ── Status badge ──────────────────────────────
+function setStatus(txt) {
+  document.getElementById('statusBadge').textContent = txt;
+}
+
+// ── Search ────────────────────────────────────
+async function startSearch() {
+  const inp = document.getElementById('homeInput');
+  const query = inp.value.trim();
+  if (!query || isLoading) return;
 
   isLoading = true;
-  document.getElementById('sendBtn').disabled = true;
-  setStatus(true);
+  document.getElementById('homeSend').disabled = true;
 
-  addUserRow(text);
-  messages.push({ role: 'user', content: text });
+  showAnswerScreen(query);
+  pbarStart();
+  setStatus('Yanıtlanıyor…');
+  _ansText = '';
+  stepQueue = [];
 
-  // Create assistant row
-  const row = createAsstRow();
-  asstContent = row.content;
-  asstTextEl  = row.textEl;
-  currentText = '';
-  tcGroup     = null;
+  await runQuery(query);
 
-  // Clear typing indicator
-  asstTextEl.innerHTML = '';
+  isLoading = false;
+  document.getElementById('homeSend').disabled = false;
+  document.getElementById('ansSend').disabled = false;
+  pbarDone();
+  setStatus('Hazır');
+}
 
-  let assistantContent = '';
-  let localTcId = `${tcIdCounter++}-`;
-  let localTcIdx = 0;
-  const tcQueue = [];   // FIFO: tool_call ids waiting for their tool_result
+async function newSearch() {
+  if (isLoading) return;
+  const inp = document.getElementById('ansInput');
+  const query = inp.value.trim();
+  if (!query) return;
+  inp.value = '';
+  autoResize(inp);
 
+  isLoading = true;
+  document.getElementById('ansSend').disabled = true;
+
+  // Reset answer area (stay on answer screen)
+  document.getElementById('queryText').textContent = query;
+  document.getElementById('stepsList').innerHTML = `
+    <div class="thinking-row" id="thinkingRow">
+      <div class="thinking-dots"><span></span><span></span><span></span></div>
+      <span>Sorgunuz analiz ediliyor…</span>
+    </div>`;
+  document.getElementById('ansText').innerHTML = '';
+  document.getElementById('sourcesSection').style.display = 'none';
+  document.getElementById('sourceCards').innerHTML = '';
+  document.getElementById('rlBar').classList.remove('show');
+  document.getElementById('stepsSection').style.display = 'block';
+  document.getElementById('ansScroll').scrollTop = 0;
+
+  _ansText = '';
+  stepQueue = [];
+  pbarStart();
+  setStatus('Yanıtlanıyor…');
+
+  await runQuery(query);
+
+  isLoading = false;
+  document.getElementById('ansSend').disabled = false;
+  pbarDone();
+  setStatus('Hazır');
+}
+
+async function runQuery(query) {
   try {
     const resp = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, model: currentModel })
+      body: JSON.stringify({ query, model: currentModel })
     });
+
+    if (resp.status === 429) {
+      const err = await resp.json();
+      removeThinking();
+      document.getElementById('stepsSection').style.display = 'none';
+      const mins = Math.ceil((err.detail?.reset_in || 3600) / 60);
+      document.getElementById('rlMsg').textContent =
+        `Saatlik ${RATE_MAX} sorgu limitine ulaştınız. ${mins} dakika sonra tekrar deneyin.`;
+      document.getElementById('rlBar').classList.add('show');
+      setRate(RATE_MAX);
+      return;
+    }
+
+    let firstText = true;
 
     const reader = resp.body.getReader();
     const dec = new TextDecoder();
@@ -691,117 +980,93 @@ async function send() {
       const { done, value } = await reader.read();
       if (done) break;
       buf += dec.decode(value, { stream: true });
+      const chunks = buf.split('\n\n');
+      buf = chunks.pop();
 
-      let lines = buf.split('\n\n');
-      buf = lines.pop();
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = JSON.parse(line.slice(6));
+      for (const chunk of chunks) {
+        if (!chunk.startsWith('data: ')) continue;
+        const data = JSON.parse(chunk.slice(6));
 
         if (data.type === 'text') {
-          appendText(data.text);
-          assistantContent += data.text;
+          if (firstText) {
+            removeThinking();
+            firstText = false;
+          }
+          appendAnswer(data.text);
         } else if (data.type === 'tool_call') {
-          const id = `${localTcId}${localTcIdx++}`;
-          addToolCallCard(data.tool, data.input, id);
-          flashToolItem(data.tool);
-          addActivity(data.tool, data.input);
-          tcQueue.push(id);
+          addStep(data.tool);
         } else if (data.type === 'tool_result') {
-          const id = tcQueue.shift();
-          if (id) finishToolCallCard(id, data.result);
-          // After all results in a batch, reset tcGroup so next tool round gets a fresh group
-          if (tcQueue.length === 0) tcGroup = null;
+          const id = stepQueue.shift();
+          if (id) doneStep(id, data.result);
         } else if (data.type === 'done') {
-          if (assistantContent) {
-            messages.push({ role: 'assistant', content: assistantContent });
-          }
-          if (asstTextEl && asstTextEl.innerHTML === '') {
-            asstTextEl.remove();
-          }
+          removeThinking();
+          const used = parseInt(resp.headers.get('X-RateLimit-Used'));
+          if (!isNaN(used)) setRate(used);
         }
       }
     }
   } catch (e) {
-    ensureTextEl();
-    asstTextEl.innerHTML = `<span style="color:#f87171">Hata: ${escHtml(String(e))}</span>`;
-  }
-
-  isLoading = false;
-  document.getElementById('sendBtn').disabled = false;
-  setStatus(false);
-  asstContent = null;
-  asstTextEl  = null;
-  tcGroup     = null;
-}
-
-function setStatus(loading) {
-  const dot  = document.getElementById('statusDot');
-  const text = document.getElementById('statusText');
-  if (loading) {
-    dot.classList.add('loading');
-    text.textContent = 'Yanıtlanıyor…';
-  } else {
-    dot.classList.remove('loading');
-    text.textContent = 'Hazır';
+    removeThinking();
+    document.getElementById('ansText').innerHTML =
+      `<span style="color:#dc2626;font-size:13px">Bağlantı hatası: ${esc(String(e))}</span>`;
   }
 }
 
-function sendSuggestion(text) {
-  document.getElementById('input').value = text;
-  send();
+function fillAndSearch(q) {
+  document.getElementById('homeInput').value = q;
+  autoResize(document.getElementById('homeInput'));
+  startSearch();
 }
 
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+function cycleModel() {
+  const i = MODELS.indexOf(currentModel);
+  currentModel = MODELS[(i + 1) % MODELS.length];
+  document.getElementById('modelBadge').textContent = currentModel;
 }
 
+// ── Input helpers ─────────────────────────────
 function autoResize(el) {
   el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+function handleHomeKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); startSearch(); }
+}
+function handleAnsKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); newSearch(); }
 }
 
-// ── Helpers ───────────────────────────────────
-function escHtml(s) {
-  return String(s)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
-}
-
-function markdownToHtml(md) {
-  // Escape first, then apply markdown
-  let s = md
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;');
-
+// ── Markdown renderer ─────────────────────────
+function renderMd(raw) {
+  let s = raw
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   s = s
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br>');
-
-  return `<p>${s}</p>`.replace(/<p><\/p>/g, '').replace(/<p>(<h[23]>)/g, '$1').replace(/(<\/h[23]>)<\/p>/g, '$1');
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^[-*] (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]+?<\/li>)/g,'<ul>$1</ul>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\n/g,'<br>');
+  return `<p>${s}</p>`
+    .replace(/<p><\/p>/g,'')
+    .replace(/<p>(<(?:h[23]|ul)>)/g,'$1')
+    .replace(/(<\/(?:h[23]|ul)>)<\/p>/g,'$1');
 }
 
-// ── Model switcher ─────────────────────────────
-document.getElementById('modelBadge').onclick = () => {
-  const idx = MODELS.indexOf(currentModel);
-  currentModel = MODELS[(idx + 1) % MODELS.length];
-  document.getElementById('modelBadge').textContent = currentModel;
-};
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 // ── Init ──────────────────────────────────────
 loadTools();
+loadRate();
+document.getElementById('homeInput').focus();
 </script>
 </body>
 </html>
