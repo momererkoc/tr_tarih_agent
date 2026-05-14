@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Türkiye Tarih Araştırma Ajanı</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0f1117;
+    --surface:  #1a1d27;
+    --border:   #2a2d3e;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --accent:   #6366f1;
+    --accent-s: #4f46e5;
+    --success:  #10b981;
+    --warn:     #f59e0b;
+    --info:     #3b82f6;
+    --purple:   #8b5cf6;
+    --radius:   12px;
+    --sidebar:  280px;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Header ─────────────────────────────────── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 24px;
+    height: 60px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  .logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    border-radius: 10px;
+    display: grid; place-items: center;
+    font-size: 18px;
+  }
+  .header-title { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+  .header-sub   { font-size: 12px; color: var(--muted); }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .model-badge {
+    background: rgba(99,102,241,.15);
+    border: 1px solid rgba(99,102,241,.3);
+    color: var(--accent);
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+  }
+
+  /* ── Layout ──────────────────────────────────── */
+  .layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ─────────────────────────────────── */
+  aside {
+    width: var(--sidebar);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .sidebar-section { padding: 16px; border-bottom: 1px solid var(--border); }
+  .sidebar-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .8px;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .tool-card {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    cursor: default;
+    transition: border-color .2s, background .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .tool-card::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--tc, #6b7280);
+    border-radius: 3px 0 0 3px;
+  }
+  .tool-card.active {
+    border-color: var(--tc, #6b7280);
+    background: color-mix(in srgb, var(--tc, #6b7280) 8%, transparent);
+  }
+  .tool-card.used { border-color: color-mix(in srgb, var(--tc, #6b7280) 60%, transparent); }
+  .tool-top { display: flex; align-items: center; gap: 8px; }
+  .tool-icon { font-size: 14px; }
+  .tool-name { font-size: 12px; font-weight: 600; flex: 1; }
+  .tool-badge {
+    font-size: 10px; padding: 2px 6px; border-radius: 10px;
+    background: color-mix(in srgb, var(--tc) 20%, transparent);
+    color: var(--tc);
+  }
+  .tool-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+  .activity-list { flex: 1; overflow-y: auto; padding: 12px 16px; }
+  .activity-list::-webkit-scrollbar { width: 4px; }
+  .activity-list::-webkit-scrollbar-track { background: transparent; }
+  .activity-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .activity-item {
+    display: flex; gap: 8px; align-items: flex-start;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    margin-top: 3px; flex-shrink: 0;
+    background: var(--tc, var(--muted));
+  }
+  .activity-text { color: var(--muted); line-height: 1.5; }
+  .activity-text strong { color: var(--text); }
+  .no-activity { font-size: 11px; color: var(--muted); text-align: center; padding: 24px 0; }
+
+  /* ── Chat area ───────────────────────────────── */
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .messages::-webkit-scrollbar { width: 6px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* Welcome */
+  .welcome {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; flex: 1; text-align: center; padding: 40px;
+  }
+  .welcome-logo {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    border-radius: 20px;
+    display: grid; place-items: center;
+    font-size: 32px; margin-bottom: 20px;
+  }
+  .welcome h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .welcome p  { color: var(--muted); font-size: 14px; max-width: 420px; line-height: 1.6; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 20px; }
+  .chip {
+    padding: 8px 16px; border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface); font-size: 12px;
+    cursor: pointer; transition: border-color .2s, background .2s;
+  }
+  .chip:hover { border-color: var(--accent); background: rgba(99,102,241,.08); }
+
+  /* Messages */
+  .msg { display: flex; flex-direction: column; gap: 4px; max-width: 800px; }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.assistant { align-self: flex-start; align-items: flex-start; }
+
+  .msg-role {
+    font-size: 11px; color: var(--muted);
+    padding: 0 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .bubble {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-size: 14px; line-height: 1.65;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .msg.user .bubble {
+    background: var(--accent);
+    border-radius: var(--radius) var(--radius) 4px var(--radius);
+  }
+  .msg.assistant .bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) var(--radius) 4px;
+  }
+
+  /* Tool call card */
+  .tool-call-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface);
+    font-size: 13px;
+    min-width: 300px;
+  }
+  .tool-call-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: color-mix(in srgb, var(--tc, #6b7280) 10%, var(--surface));
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .tool-call-header .icon { font-size: 14px; }
+  .tool-call-header .name { font-weight: 600; flex: 1; color: var(--tc, var(--text)); }
+  .tool-call-header .status {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    background: rgba(245,158,11,.15); color: var(--warn);
+  }
+  .tool-call-header .status.done {
+    background: rgba(16,185,129,.15); color: var(--success);
+  }
+  .tool-call-body { padding: 12px 14px; }
+  .tool-call-body pre {
+    font-size: 11px; color: var(--muted);
+    white-space: pre-wrap; word-break: break-all;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  .tool-result-preview {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .tool-result-preview .label { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 4px; }
+  .tool-result-preview pre { color: var(--text); font-size: 11px; }
+  .collapsed .tool-call-body { display: none; }
+  .chevron { font-size: 10px; color: var(--muted); transition: transform .2s; }
+  .collapsed .chevron { transform: rotate(-90deg); }
+
+  /* Typing indicator */
+  .typing { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+  .typing span {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
+    animation: bounce .8s ease infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: .15s; }
+  .typing span:nth-child(3) { animation-delay: .3s; }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); opacity: .4; }
+    50%       { transform: translateY(-4px); opacity: 1; }
+  }
+
+  /* Input bar */
+  .input-bar {
+    padding: 16px 24px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex; gap: 12px; align-items: flex-end;
+  }
+  .input-wrap {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex; align-items: flex-end;
+    padding: 10px 14px;
+    gap: 8px;
+    transition: border-color .2s;
+  }
+  .input-wrap:focus-within { border-color: var(--accent); }
+  textarea {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text); font-size: 14px; line-height: 1.5;
+    resize: none; max-height: 140px; font-family: inherit;
+  }
+  textarea::placeholder { color: var(--muted); }
+  .send-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--accent); border: none; cursor: pointer;
+    display: grid; place-items: center;
+    transition: background .2s, transform .1s;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { background: var(--accent-s); }
+  .send-btn:active { transform: scale(.95); }
+  .send-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .send-btn svg { width: 16px; height: 16px; fill: white; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">🏛</div>
+  <div>
+    <div class="header-title">Türkiye Tarih Araştırma Ajanı</div>
+    <div class="header-sub">Resmi Gazete · Belleten · TTK · TBMM Arşivi</div>
+  </div>
+  <div class="header-right">
+    <span class="model-badge" id="modelBadge">claude-sonnet-4-5</span>
+    <div class="status-dot" id="statusDot"></div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Araçlar</div>
+      <div id="toolList"></div>
+    </div>
+    <div class="sidebar-label" style="padding: 12px 16px 4px;">Aktivite</div>
+    <div class="activity-list" id="activityList">
+      <div class="no-activity">Henüz aktivite yok</div>
+    </div>
+  </aside>
+
+  <!-- Chat -->
+  <main>
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="welcome-logo">🏛</div>
+        <h2>Tarih Araştırma Ajanı</h2>
+        <p>Resmi Gazete, Belleten Dergisi, TTK Görsel Arşivi ve TBMM kayıtlarında kapsamlı araştırma yapın.</p>
+        <div class="chips">
+          <div class="chip" onclick="sendSuggestion('Atatürk hakkında Belleten makalelerini ara')">Atatürk / Belleten</div>
+          <div class="chip" onclick="sendSuggestion('Halikarnas Balıkçısı mazbatasını ara')">TBMM Mazbatası</div>
+          <div class="chip" onclick="sendSuggestion('Kurtuluş Savaşı fotoğraflarını ara')">Tarihi Görseller</div>
+          <div class="chip" onclick="sendSuggestion('Lozan Antlaşması Resmi Gazete kaydını bul')">Resmi Gazete</div>
+        </div>
+      </div>
+    </div>
+    <div class="input-bar">
+      <div class="input-wrap">
+        <textarea id="input" rows="1" placeholder="Araştırmak istediğiniz konuyu yazın…"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      </div>
+      <button class="send-btn" id="sendBtn" onclick="send()" title="Gönder">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </main>
+</div>
+
+<script>
+const MODELS = ["claude-sonnet-4-5", "claude-haiku-4-5-20251001", "claude-opus-4-7"];
+let currentModel = MODELS[0];
+let isLoading = false;
+let messages = [];
+
+// ── Tool metadata ─────────────────────────────
+const TOOL_META = {};
+let toolUseCounts = {};
+
+async function loadTools() {
+  const res = await fetch('/api/tools');
+  const tools = await res.json();
+  const list = document.getElementById('toolList');
+  list.innerHTML = '';
+  tools.forEach(t => {
+    TOOL_META[t.name] = t.meta;
+    toolUseCounts[t.name] = 0;
+    const card = document.createElement('div');
+    card.className = 'tool-card';
+    card.id = `tool-${t.name}`;
+    card.style.setProperty('--tc', t.meta.color);
+    card.innerHTML = `
+      <div class="tool-top">
+        <span class="tool-icon">${t.meta.icon}</span>
+        <span class="tool-name">${t.meta.label}</span>
+        <span class="tool-badge" id="badge-${t.name}">0</span>
+      </div>
+      <div class="tool-desc">${t.description}</div>`;
+    list.appendChild(card);
+  });
+}
+
+function updateToolCard(name) {
+  toolUseCounts[name] = (toolUseCounts[name] || 0) + 1;
+  const card = document.getElementById(`tool-${name}`);
+  const badge = document.getElementById(`badge-${name}`);
+  if (card) card.classList.add('used', 'active');
+  if (badge) badge.textContent = toolUseCounts[name];
+  setTimeout(() => card?.classList.remove('active'), 1200);
+}
+
+function addActivity(name, input) {
+  const meta = TOOL_META[name] || { icon: '🔧', label: name, color: '#6b7280' };
+  const al = document.getElementById('activityList');
+  const no = al.querySelector('.no-activity');
+  if (no) no.remove();
+
+  const args = Object.entries(input).map(([k, v]) => `${k}: ${v}`).join(', ');
+  const item = document.createElement('div');
+  item.className = 'activity-item';
+  item.style.setProperty('--tc', meta.color);
+  item.innerHTML = `
+    <div class="activity-dot"></div>
+    <div class="activity-text"><strong>${meta.icon} ${meta.label}</strong><br>${args}</div>`;
+  al.prepend(item);
+}
+
+// ── Messages ──────────────────────────────────
+const msgsEl = document.getElementById('messages');
+const welcome = document.getElementById('welcome');
+
+function hideWelcome() {
+  if (welcome) welcome.remove();
+}
+
+function scrollBottom() {
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+function addUserBubble(text) {
+  hideWelcome();
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `
+    <div class="msg-role">Siz</div>
+    <div class="bubble">${escHtml(text)}</div>`;
+  msgsEl.appendChild(div);
+  scrollBottom();
+}
+
+function createAssistantMsg() {
+  hideWelcome();
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.innerHTML = `
+    <div class="msg-role">
+      🏛 Tarih Ajanı
+    </div>
+    <div class="bubble" id="asst-bubble">
+      <div class="typing"><span></span><span></span><span></span></div>
+    </div>`;
+  msgsEl.appendChild(div);
+  scrollBottom();
+  return document.getElementById('asst-bubble');
+}
+
+let currentBubble = null;
+let currentText = '';
+
+function appendText(text) {
+  if (!currentBubble) return;
+  currentText += text;
+  currentBubble.innerHTML = markdownToHtml(currentText);
+  scrollBottom();
+}
+
+function addToolCallCard(name, input, id) {
+  const meta = TOOL_META[name] || { icon: '🔧', label: name, color: '#6b7280' };
+  const card = document.createElement('div');
+  card.className = 'tool-call-card collapsed';
+  card.id = `tc-${id}`;
+  card.style.setProperty('--tc', meta.color);
+  card.innerHTML = `
+    <div class="tool-call-header" onclick="toggleCard('tc-${id}')">
+      <span class="icon">${meta.icon}</span>
+      <span class="name">${meta.label}</span>
+      <span class="status" id="tc-status-${id}">Çalışıyor…</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="tool-call-body">
+      <pre>${escHtml(JSON.stringify(input, null, 2))}</pre>
+      <div class="tool-result-preview" id="tc-result-${id}" style="display:none">
+        <div class="label">Sonuç Önizlemesi</div>
+        <pre></pre>
+      </div>
+    </div>`;
+  msgsEl.appendChild(card);
+  scrollBottom();
+  return card;
+}
+
+function updateToolCard2(name, id, result) {
+  const status = document.getElementById(`tc-status-${id}`);
+  if (status) { status.textContent = 'Tamamlandı'; status.className = 'status done'; }
+  const rp = document.getElementById(`tc-result-${id}`);
+  if (rp) {
+    rp.style.display = 'block';
+    rp.querySelector('pre').textContent = result;
+  }
+}
+
+function toggleCard(id) {
+  document.getElementById(id)?.classList.toggle('collapsed');
+  scrollBottom();
+}
+
+// ── Send ──────────────────────────────────────
+async function send() {
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+  input.value = '';
+  autoResize(input);
+
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  addUserBubble(text);
+  messages.push({ role: 'user', content: text });
+
+  currentBubble = createAssistantMsg();
+  currentText = '';
+
+  // clear typing
+  currentBubble.innerHTML = '';
+
+  const toolCardMap = {};
+  let tcIdCounter = 0;
+  let assistantContent = '';
+
+  try {
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, model: currentModel })
+    });
+
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+
+      let lines = buf.split('\n\n');
+      buf = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = JSON.parse(line.slice(6));
+
+        if (data.type === 'text') {
+          appendText(data.text);
+          assistantContent += data.text;
+        } else if (data.type === 'tool_call') {
+          const id = `t${tcIdCounter++}`;
+          addToolCallCard(data.tool, data.input, id);
+          toolCardMap[data.tool + JSON.stringify(data.input)] = id;
+          updateToolCard(data.tool);
+          addActivity(data.tool, data.input);
+        } else if (data.type === 'tool_result') {
+          const key = data.tool + JSON.stringify(Object.fromEntries(
+            Object.entries(data).filter(([k]) => k !== 'type' && k !== 'result' && k !== 'meta' && k !== 'tool')
+          ));
+          // Find card by tool name order
+          const id = `t${tcIdCounter - 1}`;
+          updateToolCard2(data.tool, id, data.result);
+        } else if (data.type === 'done') {
+          if (assistantContent) {
+            messages.push({ role: 'assistant', content: assistantContent });
+          }
+        }
+      }
+    }
+  } catch (e) {
+    if (currentBubble) currentBubble.innerHTML = `<span style="color:#ef4444">Hata: ${escHtml(String(e))}</span>`;
+  }
+
+  isLoading = false;
+  document.getElementById('sendBtn').disabled = false;
+  currentBubble = null;
+}
+
+function sendSuggestion(text) {
+  document.getElementById('input').value = text;
+  send();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+// ── Helpers ───────────────────────────────────
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function markdownToHtml(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px;font-size:92%">$1</code>')
+    .replace(/^### (.+)$/gm, '<h3 style="font-size:14px;font-weight:700;margin:10px 0 4px">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 style="font-size:15px;font-weight:700;margin:12px 0 6px">$1</h2>')
+    .replace(/^- (.+)$/gm, '• $1')
+    .replace(/\n/g, '<br>');
+}
+
+// ── Model switcher ────────────────────────────
+document.getElementById('modelBadge').onclick = () => {
+  const idx = MODELS.indexOf(currentModel);
+  currentModel = MODELS[(idx + 1) % MODELS.length];
+  document.getElementById('modelBadge').textContent = currentModel;
+};
+
+// ── Init ──────────────────────────────────────
+loadTools();
+</script>
+</body>
+</html>
